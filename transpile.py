@@ -60,6 +60,15 @@ def py_name(value):
     )
 
 
+def class_name_to_symbol(class_name):
+    return {
+        ast.Add: "+",
+        ast.Sub: "-",
+        ast.Mult: "*",
+        ast.Div: "/",
+    }[class_name]
+
+
 def keywords_to_dict(keywords):
     kwargs = {}
     for keyword in keywords:
@@ -69,13 +78,33 @@ def keywords_to_dict(keywords):
 
 def python_node_to_js(node):
     if isinstance(node, ast.Assign):
-        return (
-            "var "
-            + py_name(node.targets[0].id)
-            + " = "
-            + python_node_to_js(node.value)
-            + ";"
-        )
+        if isinstance(node.targets[0], ast.Attribute):
+            if ast.unparse(node.targets[0]).startswith("js."):
+                return (
+                    ast.unparse(node.targets[0])[3:]
+                    + " = "
+                    + python_node_to_js(node.value)
+                    + ";"
+                )
+        else:
+            return (
+                "var "
+                + py_name(node.targets[0].id)
+                + " = "
+                + python_node_to_js(node.value)
+                + ";"
+            )
+    elif isinstance(node, ast.AugAssign):
+        if isinstance(node.target, ast.Attribute):
+            if ast.unparse(node.target).startswith("js."):
+                return (
+                    ast.unparse(node.target)[3:]
+                    + " "
+                    + class_name_to_symbol(type(node.op))
+                    + "= "
+                    + python_node_to_js(node.value)
+                    + ";"
+                )
     elif isinstance(node, ast.Name):
         return py_name(node.id)
     elif isinstance(node, ast.Constant):
@@ -139,7 +168,7 @@ def python_node_to_js(node):
 
 
 for node in python_ast.body:
-    print(python_node_to_js(node), "|", ast.unparse(node))
+    # print(python_node_to_js(node), "|", ast.unparse(node))
     javascript_code += python_node_to_js(node)
 
 print("\n\njavascript code:")

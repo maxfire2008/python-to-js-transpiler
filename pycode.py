@@ -7,6 +7,8 @@ print(nw_l)
 
 for i in range(10):
     print(nw_c)
+    js.document.getRootNode().body.innerHTML += nw_c + "<br>"
+
     nw_w = nw_c
     nw_c = nw_c + nw_l
     nw_l = nw_w
